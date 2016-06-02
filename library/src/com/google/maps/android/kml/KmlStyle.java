@@ -14,7 +14,7 @@ import java.util.Random;
 /**
  * Represents the defined styles in the KML document
  */
-/* package */ class KmlStyle {
+/* package */ public class KmlStyle {
 
     private final static int HSV_VALUES = 3;
 
@@ -49,6 +49,8 @@ import java.util.Random;
     private boolean mPolyRandomColorMode;
 
     private float mMarkerColor;
+
+    private Integer fullMarkerColor;
 
     /**
      * Creates a new Style object
@@ -127,7 +129,7 @@ import java.util.Random;
      *
      * @return scale value
      */
-    /* package */ double getIconScale() {
+    public double getIconScale() {
         return mScale;
     }
 
@@ -174,7 +176,7 @@ import java.util.Random;
      *
      * @return Url for the marker icon, null otherwise
      */
-    /* package */ String getIconUrl() {
+    public String getIconUrl() {
         return mIconUrl;
     }
 
@@ -204,11 +206,15 @@ import java.util.Random;
      *
      * @param color Color for a marker
      */
-    /* package */ void setMarkerColor(String color) {
-        int integerColor = Color.parseColor("#" + convertColor(color));
-        mMarkerColor = getHueValue(integerColor);
+    public void setMarkerColor(String color) {
+        fullMarkerColor = Color.parseColor("#" + convertColor(color));
+        mMarkerColor = getHueValue(fullMarkerColor);
         mMarkerOptions.icon(BitmapDescriptorFactory.defaultMarker(mMarkerColor));
         mStylesSet.add("markerColor");
+    }
+
+    public Integer getFullMarkerColor() {
+        return fullMarkerColor;
     }
 
     /**
