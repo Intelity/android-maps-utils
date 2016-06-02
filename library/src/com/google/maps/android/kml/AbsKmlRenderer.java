@@ -2,7 +2,13 @@ package com.google.maps.android.kml;
 
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.util.DisplayMetrics;
 import android.util.Log;
 
 import com.google.android.gms.maps.GoogleMap;
@@ -20,6 +26,7 @@ import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,7 +35,7 @@ public abstract class AbsKmlRenderer {
 
   private static final String LOG_TAG = "KmlRenderer";
 
-  private final ArrayList<String> mMarkerIconUrls;
+  private final HashSet<String> mMarkerIconUrls;
 
   private final ArrayList<String> mGroundOverlayUrls;
 
@@ -57,7 +64,7 @@ public abstract class AbsKmlRenderer {
   public AbsKmlRenderer(GoogleMap map, Context context) {
     mContext = context;
     mMap = map;
-    mMarkerIconUrls = new ArrayList<String>();
+    mMarkerIconUrls = new HashSet<>();
     mGroundOverlayUrls = new ArrayList<String>();
     mStylesRenderer = new HashMap<String, KmlStyle>();
     mLayerVisible = false;
@@ -99,11 +106,16 @@ public abstract class AbsKmlRenderer {
    * @param scale Scale value. A "1.0" scale value corresponds to the original size of the Bitmap
    * @return A scaled bitmap image
    */
-  private static BitmapDescriptor scaleIcon(Bitmap unscaledBitmap, Double scale) {
-    int width = (int) (unscaledBitmap.getWidth() * scale);
-    int height = (int) (unscaledBitmap.getHeight() * scale);
-    Bitmap scaledBitmap = Bitmap.createScaledBitmap(unscaledBitmap, width, height, false);
-    return BitmapDescriptorFactory.fromBitmap(scaledBitmap);
+  private static Bitmap scaleIcon(Context mContext, Bitmap unscaledBitmap, Double scale) {
+    int width = (int) convertDpToPixel(mContext, unscaledBitmap.getWidth() * scale);
+    int height = (int) convertDpToPixel(mContext, unscaledBitmap.getHeight() * scale);
+    return Bitmap.createScaledBitmap(unscaledBitmap, width, height, false);
+  }
+
+  private static double convertDpToPixel(Context context, double dp){
+    Resources resources = context.getResources();
+    DisplayMetrics metrics = resources.getDisplayMetrics();
+    return dp * ((float) metrics.densityDpi / DisplayMetrics.DENSITY_DEFAULT);
   }
 
   /**
@@ -212,10 +224,15 @@ public abstract class AbsKmlRenderer {
     if (!mGroundOverlayImagesDownloaded) {
       downloadGroundOverlays();
     }
-    if (!mMarkerIconsDownloaded) {
-      downloadMarkerIcons();
-    }
+
     mLayerVisible = true;
+
+    // XXX: We reuse same layer many times with modified data (e.g. with changed containers visibility) so
+    // we should force icon downloading because without this 'onMarkerIconDownloaded()' will not be called
+    // and right marker icons not set.
+    //if (!mMarkerIconsDownloaded) {
+      downloadMarkerIcons();
+    //}
   }
 
   /**
@@ -393,13 +410,16 @@ public abstract class AbsKmlRenderer {
    * @param markerOptions The marker which is displaying the icon
    */
   private void addMarkerIcons(String styleUrl, MarkerOptions markerOptions) {
-    if (getCachedBitmap(styleUrl) != null) {
-      // Bitmap stored in cache
-      Bitmap bitmap = getCachedBitmap(styleUrl);
-      markerOptions.icon(BitmapDescriptorFactory.fromBitmap(bitmap));
-    } else if (!mMarkerIconUrls.contains(styleUrl)) {
+    // XXX: We should not use cached icons because we have to process this icons (scale, fill with color, etc)
+    // so we add them to the "download required" list. There is no overhead because if it not first time then
+    // ImageLoader will use memory cached version.
+//    if (getCachedBitmap(styleUrl) != null) {
+//      // Bitmap stored in cache
+//      Bitmap bitmap = getCachedBitmap(styleUrl);
+//      markerOptions.icon(BitmapDescriptorFactory.fromBitmap(bitmap));
+//    } else if (!mMarkerIconUrls.contains(styleUrl)) {
       mMarkerIconUrls.add(styleUrl);
-    }
+//    }
   }
 
   /**
@@ -456,8 +476,28 @@ public abstract class AbsKmlRenderer {
     double bitmapScale = style.getIconScale();
     String bitmapUrl = style.getIconUrl();
     Bitmap bitmapImage = getCachedBitmap(bitmapUrl);
-    BitmapDescriptor scaledBitmap = scaleIcon(bitmapImage, bitmapScale);
-    ((Marker) placemarks.get(placemark)).setIcon(scaledBitmap);
+    final Bitmap scaledBitmap = scaleIcon(mContext, bitmapImage, bitmapScale);
+
+    final int markerColor = style.getFullMarkerColor();
+
+    final Bitmap resultBitmap;
+    if (markerColor >= 0) {
+      final Bitmap bitmap = Bitmap.createBitmap(scaledBitmap.getWidth(), scaledBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+      final Canvas canvas = new Canvas(bitmap);
+      final Paint paint = new Paint();
+      paint.setColor(markerColor);
+      canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), paint);
+
+      paint.setAntiAlias(true);
+      paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.MULTIPLY));
+      canvas.drawBitmap(scaledBitmap, 0, 0, paint);
+
+      resultBitmap = bitmap;
+    } else {
+      resultBitmap = scaledBitmap;
+    }
+
+    ((Marker) placemarks.get(placemark)).setIcon(BitmapDescriptorFactory.fromBitmap(resultBitmap));
   }
 
   /**
@@ -469,7 +509,7 @@ public abstract class AbsKmlRenderer {
   void addContainerGroupIconsToMarkers(String iconUrl,
                                                Iterable<KmlContainer> kmlContainers) {
     for (KmlContainer container : kmlContainers) {
-      addIconToMarkers(iconUrl, mPlacemarks);
+      addIconToMarkers(iconUrl, container.getPlacemarksHashMap());
       if (container.hasContainers()) {
         addContainerGroupIconsToMarkers(iconUrl, container.getContainers());
       }

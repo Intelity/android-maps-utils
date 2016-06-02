@@ -50,6 +50,8 @@ import java.util.Random;
 
     private float mMarkerColor;
 
+    private int fullMarkerColor = -1;
+
     /**
      * Creates a new Style object
      */
@@ -204,11 +206,15 @@ import java.util.Random;
      *
      * @param color Color for a marker
      */
-    /* package */ void setMarkerColor(String color) {
-        int integerColor = Color.parseColor("#" + convertColor(color));
-        mMarkerColor = getHueValue(integerColor);
+    public void setMarkerColor(String color) {
+        fullMarkerColor = Color.parseColor("#" + convertColor(color));
+        mMarkerColor = getHueValue(fullMarkerColor);
         mMarkerOptions.icon(BitmapDescriptorFactory.defaultMarker(mMarkerColor));
         mStylesSet.add("markerColor");
+    }
+
+    public int getFullMarkerColor() {
+        return fullMarkerColor;
     }
 
     /**
