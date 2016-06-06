@@ -8,6 +8,7 @@ import com.google.maps.android.kml.KmlContainer;
 import com.google.maps.android.kml.KmlLayer;
 import com.google.maps.android.kml.KmlPlacemark;
 import com.google.maps.android.kml.KmlPolygon;
+import com.google.maps.android.kml.DefaultKmlRenderer;
 
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -99,8 +100,8 @@ public class KmlDemoActivity extends BaseDemoActivity {
 
         protected void onPostExecute(byte[] byteArr) {
             try {
-                kmlLayer = new KmlLayer(mMap, new ByteArrayInputStream(byteArr),
-                        getApplicationContext());
+                kmlLayer = new KmlLayer(new ByteArrayInputStream(byteArr),
+                        new DefaultKmlRenderer(mMap, getApplicationContext()));
                 kmlLayer.addLayerToMap();
                 moveCameraToKml(kmlLayer);
             } catch (XmlPullParserException e) {

@@ -20,6 +20,7 @@ import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,7 +29,7 @@ public abstract class AbsKmlRenderer {
 
   private static final String LOG_TAG = "KmlRenderer";
 
-  private final ArrayList<String> mMarkerIconUrls;
+  private final HashSet<String> mMarkerIconUrls;
 
   private final ArrayList<String> mGroundOverlayUrls;
 
@@ -57,7 +58,7 @@ public abstract class AbsKmlRenderer {
   public AbsKmlRenderer(GoogleMap map, Context context) {
     mContext = context;
     mMap = map;
-    mMarkerIconUrls = new ArrayList<String>();
+    mMarkerIconUrls = new HashSet<>();
     mGroundOverlayUrls = new ArrayList<String>();
     mStylesRenderer = new HashMap<String, KmlStyle>();
     mLayerVisible = false;
@@ -99,11 +100,10 @@ public abstract class AbsKmlRenderer {
    * @param scale Scale value. A "1.0" scale value corresponds to the original size of the Bitmap
    * @return A scaled bitmap image
    */
-  private static BitmapDescriptor scaleIcon(Bitmap unscaledBitmap, Double scale) {
+  protected Bitmap scaleIcon(Context mContext, Bitmap unscaledBitmap, Double scale) {
     int width = (int) (unscaledBitmap.getWidth() * scale);
     int height = (int) (unscaledBitmap.getHeight() * scale);
-    Bitmap scaledBitmap = Bitmap.createScaledBitmap(unscaledBitmap, width, height, false);
-    return BitmapDescriptorFactory.fromBitmap(scaledBitmap);
+    return Bitmap.createScaledBitmap(unscaledBitmap, width, height, false);
   }
 
   /**
@@ -212,10 +212,16 @@ public abstract class AbsKmlRenderer {
     if (!mGroundOverlayImagesDownloaded) {
       downloadGroundOverlays();
     }
-    if (!mMarkerIconsDownloaded) {
+
+    mLayerVisible = true;
+
+    if (!mMarkerIconsDownloaded || shouldForceDownload()) {
       downloadMarkerIcons();
     }
-    mLayerVisible = true;
+  }
+
+  protected boolean shouldForceDownload() {
+    return false;
   }
 
   /**
@@ -265,7 +271,7 @@ public abstract class AbsKmlRenderer {
    *
    * @return true if there is at least 1 container within the KmlLayer, false otherwise
    */
-    /* package */ boolean hasNestedContainers() {
+    protected boolean hasNestedContainers() {
     return mContainers != null && mContainers.size() > 0;
   }
 
@@ -274,7 +280,7 @@ public abstract class AbsKmlRenderer {
    *
    * @return iterable of KmlContainerInterface objects
    */
-    /* package */ Iterable<KmlContainer> getNestedContainers() {
+   protected Iterable<KmlContainer> getNestedContainers() {
     return mContainers;
   }
 
@@ -393,7 +399,7 @@ public abstract class AbsKmlRenderer {
    * @param markerOptions The marker which is displaying the icon
    */
   private void addMarkerIcons(String styleUrl, MarkerOptions markerOptions) {
-    if (getCachedBitmap(styleUrl) != null) {
+    if (getCachedBitmap(styleUrl) != null && !shouldForceDownload()) {
       // Bitmap stored in cache
       Bitmap bitmap = getCachedBitmap(styleUrl);
       markerOptions.icon(BitmapDescriptorFactory.fromBitmap(bitmap));
@@ -453,12 +459,18 @@ public abstract class AbsKmlRenderer {
    */
   private void scaleBitmap(KmlStyle style, HashMap<KmlPlacemark, Object> placemarks,
                            KmlPlacemark placemark) {
+    final Bitmap bitmap = scaleBitmap(style);
+    BitmapDescriptor scaledBitmap = BitmapDescriptorFactory.fromBitmap(bitmap);
+    ((Marker) placemarks.get(placemark)).setIcon(scaledBitmap);
+  }
+
+  protected Bitmap scaleBitmap(KmlStyle style) {
     double bitmapScale = style.getIconScale();
     String bitmapUrl = style.getIconUrl();
     Bitmap bitmapImage = getCachedBitmap(bitmapUrl);
-    BitmapDescriptor scaledBitmap = scaleIcon(bitmapImage, bitmapScale);
-    ((Marker) placemarks.get(placemark)).setIcon(scaledBitmap);
+    return scaleIcon(mContext, bitmapImage, bitmapScale);
   }
+
 
   /**
    * Assigns icons to markers with a url if put in a placemark tag that is nested in a folder.
@@ -469,7 +481,7 @@ public abstract class AbsKmlRenderer {
   void addContainerGroupIconsToMarkers(String iconUrl,
                                                Iterable<KmlContainer> kmlContainers) {
     for (KmlContainer container : kmlContainers) {
-      addIconToMarkers(iconUrl, mPlacemarks);
+      addIconToMarkers(iconUrl, container.getPlacemarksHashMap());
       if (container.hasContainers()) {
         addContainerGroupIconsToMarkers(iconUrl, container.getContainers());
       }
