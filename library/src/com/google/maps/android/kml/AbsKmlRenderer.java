@@ -271,7 +271,7 @@ public abstract class AbsKmlRenderer {
    *
    * @return true if there is at least 1 container within the KmlLayer, false otherwise
    */
-    /* package */ boolean hasNestedContainers() {
+    protected boolean hasNestedContainers() {
     return mContainers != null && mContainers.size() > 0;
   }
 
@@ -280,7 +280,7 @@ public abstract class AbsKmlRenderer {
    *
    * @return iterable of KmlContainerInterface objects
    */
-    /* package */ Iterable<KmlContainer> getNestedContainers() {
+   protected Iterable<KmlContainer> getNestedContainers() {
     return mContainers;
   }
 
