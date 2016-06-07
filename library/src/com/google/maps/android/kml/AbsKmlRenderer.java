@@ -100,7 +100,7 @@ public abstract class AbsKmlRenderer {
    * @param scale Scale value. A "1.0" scale value corresponds to the original size of the Bitmap
    * @return A scaled bitmap image
    */
-  protected Bitmap scaleIcon(Context mContext, Bitmap unscaledBitmap, Double scale) {
+  protected Bitmap scaleIcon(Bitmap unscaledBitmap, float scale) {
     int width = (int) (unscaledBitmap.getWidth() * scale);
     int height = (int) (unscaledBitmap.getHeight() * scale);
     return Bitmap.createScaledBitmap(unscaledBitmap, width, height, false);
@@ -468,7 +468,7 @@ public abstract class AbsKmlRenderer {
     double bitmapScale = style.getIconScale();
     String bitmapUrl = style.getIconUrl();
     Bitmap bitmapImage = getCachedBitmap(bitmapUrl);
-    return scaleIcon(mContext, bitmapImage, bitmapScale);
+    return scaleIcon(bitmapImage, (float) bitmapScale);
   }
 
 
