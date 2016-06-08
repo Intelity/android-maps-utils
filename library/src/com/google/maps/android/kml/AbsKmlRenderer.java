@@ -527,7 +527,7 @@ public abstract class AbsKmlRenderer {
    * @param style contains relevant styling properties for the Marker
    * @return Marker object
    */
-  private Marker addPointToMap(KmlPlacemark placemark, KmlPoint point, KmlStyle style,
+  protected Marker addPointToMap(KmlPlacemark placemark, KmlPoint point, KmlStyle style,
                                KmlStyle markerInlineStyle) {
     MarkerOptions markerUrlStyle = style.getMarkerOptions();
     markerUrlStyle.position(point.getGeometryObject());
