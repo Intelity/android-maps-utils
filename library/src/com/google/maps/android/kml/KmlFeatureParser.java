@@ -24,7 +24,9 @@ import static org.xmlpull.v1.XmlPullParser.START_TAG;
 
     private final static int LATITUDE_INDEX = 1;
 
-    private final static String PROPERTY_REGEX = "name|description|visibility|open|address|phoneNumber";
+    private final static String PROPERTY_REGEX = "name|visibility|open|address|phoneNumber";
+
+    private final static String DESCRIPTION_REGEX = "description";
 
     private final static String BOUNDARY_REGEX = "outerBoundaryIs|innerBoundaryIs";
 
@@ -48,6 +50,7 @@ import static org.xmlpull.v1.XmlPullParser.START_TAG;
         KmlStyle inlineStyle = null;
         HashMap<String, String> properties = new HashMap<String, String>();
         KmlGeometry geometry = null;
+        String description = null;
         int eventType = parser.getEventType();
         while (!(eventType == END_TAG && parser.getName().equals("Placemark"))) {
             if (eventType == START_TAG) {
@@ -57,6 +60,8 @@ import static org.xmlpull.v1.XmlPullParser.START_TAG;
                     geometry = createGeometry(parser, parser.getName());
                 } else if (parser.getName().matches(PROPERTY_REGEX)) {
                     properties.put(parser.getName(), parser.nextText());
+                } else if (parser.getName().matches(DESCRIPTION_REGEX)) {
+                    description = parser.nextText();
                 } else if (parser.getName().equals(EXTENDED_DATA)) {
                     properties.putAll(setExtendedDataProperties(parser));
                 } else if (parser.getName().equals(STYLE_TAG)) {
@@ -65,7 +70,7 @@ import static org.xmlpull.v1.XmlPullParser.START_TAG;
             }
             eventType = parser.next();
         }
-        return new KmlPlacemark(geometry, styleId, inlineStyle, properties);
+        return new KmlPlacemark(geometry, styleId, inlineStyle, properties, description);
     }
 
     /**
