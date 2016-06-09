@@ -1,6 +1,7 @@
 package com.google.maps.android.kml;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Represents a placemark which is either a {@link com.google.maps.android.kml.KmlPoint},
@@ -17,6 +18,8 @@ public class KmlPlacemark {
 
     private final KmlStyle mInlineStyle;
 
+    private final String description;
+
     private HashMap<String, String> mProperties;
 
     /**
@@ -28,6 +31,20 @@ public class KmlPlacemark {
      */
     public KmlPlacemark(KmlGeometry geometry, String style, KmlStyle inlineStyle,
             HashMap<String, String> properties) {
+        this(geometry, style, inlineStyle, properties, null);
+    }
+
+    /**
+     * Creates a new KmlPlacemark object
+     *
+     * @param geometry    geometry object to store
+     * @param style       style id to store
+     * @param properties  properties hashmap to store
+     * @param description placemark description
+     */
+    public KmlPlacemark(KmlGeometry geometry, String style, KmlStyle inlineStyle,
+                        HashMap<String, String> properties, String description) {
+        this.description = description;
         mProperties = new HashMap<String, String>();
         mGeometry = geometry;
         mStyle = style;
@@ -58,7 +75,7 @@ public class KmlPlacemark {
      *
      * @return property entry set
      */
-    public Iterable getProperties() {
+    public Iterable<Map.Entry<String, String>> getProperties() {
         return mProperties.entrySet();
     }
 
@@ -98,6 +115,15 @@ public class KmlPlacemark {
      */
     public boolean hasProperties() {
         return mProperties.size() > 0;
+    }
+
+    /**
+     * Gets the placemark description (not from ExtraData fields).
+     *
+     * @return the placemark description
+     */
+    public String getDescription() {
+        return description;
     }
 
     @Override

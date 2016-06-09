@@ -73,7 +73,7 @@ public class KmlFeatureParserTest extends ActivityTestCase {
         XmlPullParser xmlPullParser = createParser(R.raw.amu_nested_multigeometry);
         KmlPlacemark feature = KmlFeatureParser.createPlacemark(xmlPullParser);
         assertEquals(feature.getProperty("name"), "multiPointLine");
-        assertEquals(feature.getProperty("description"), "Nested MultiGeometry structure");
+        assertEquals(feature.getDescription(), "Nested MultiGeometry structure");
         assertEquals(feature.getGeometry().getGeometryType(), "MultiGeometry");
         ArrayList<KmlGeometry> objects = (ArrayList<KmlGeometry>) feature.getGeometry().getGeometryObject();
         assertEquals(objects.get(0).getGeometryType(), "Point");
