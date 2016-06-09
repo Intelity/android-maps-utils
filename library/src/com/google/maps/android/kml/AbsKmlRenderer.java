@@ -548,7 +548,7 @@ public abstract class AbsKmlRenderer {
    *
    * @param style Style to apply
    */
-  private void setMarkerInfoWindow(KmlStyle style, Marker marker,
+  protected void setMarkerInfoWindow(KmlStyle style, Marker marker,
                                    final KmlPlacemark placemark) {
     boolean hasName = placemark.hasProperty("name");
     boolean hasDescription = placemark.hasProperty("description");
