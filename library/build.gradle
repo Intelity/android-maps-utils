@@ -26,15 +26,10 @@ dependencies {
 
 
 android {
-<<<<<<< Updated upstream
-    compileSdkVersion 23
-    buildToolsVersion "23.0.0"
-=======
     compileSdkVersion 28
     buildToolsVersion "28.0.3"
 
     resourcePrefix 'amu_'
->>>>>>> Stashed changes
 
     sourceSets {
         main {
